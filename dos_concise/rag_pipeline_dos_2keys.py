@@ -8,22 +8,25 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 class RAGPipeline:
-    def __init__(self, azure_endpoint, api_key, api_version="2023-12-01-preview"):
-        """Initialize the RAG pipeline with Azure OpenAI credentials"""
-        # Set up Azure OpenAI embeddings
+    def __init__(self, 
+                 embeddings_endpoint, embeddings_api_key,
+                 llm_endpoint, llm_api_key, 
+                 api_version="2023-12-01-preview"):
+        """Initialize the RAG pipeline with separate Azure OpenAI credentials"""
+        # Set up Azure OpenAI embeddings (original resource)
         self.embeddings = AzureOpenAIEmbeddings(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
+            azure_endpoint=embeddings_endpoint,
+            api_key=embeddings_api_key,
             api_version=api_version,
             azure_deployment="text-embedding-ada-002"  # Update with your deployment name
         )
         
-        # Set up Azure OpenAI LLM
+        # Set up Azure OpenAI LLM (AI Foundry resource)
         self.llm = AzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
+            azure_endpoint=llm_endpoint,
+            api_key=llm_api_key,
             api_version=api_version,
-            deployment_name="gpt-35-turbo",  # Update with your deployment name
+            deployment_name="gpt-4o-mini",  # Update with your deployment name
             temperature=0.7
         )
         
@@ -102,14 +105,16 @@ class RAGPipeline:
 
 # Usage example
 if __name__ == "__main__":
-    # Initialize the pipeline
+    # Initialize the pipeline with separate endpoints
     rag = RAGPipeline(
-        azure_endpoint="https://your-resource.openai.azure.com/",
-        api_key="your-api-key"
+        embeddings_endpoint="https://your-original-openai-resource.openai.azure.com/",
+        embeddings_api_key="your-original-api-key",
+        llm_endpoint="https://your-ai-foundry-resource.openai.azure.com/",
+        llm_api_key="your-ai-foundry-api-key"
     )
     
     # Load and process PDFs
-    pdf_files = ["cellstructure.pdf"]
+    pdf_files = ["document1.pdf", "document2.pdf"]
     num_chunks = rag.load_and_process_pdfs(pdf_files)
     print(f"Processed {num_chunks} chunks")
     
