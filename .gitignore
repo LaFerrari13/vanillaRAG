@@ -1,0 +1,11 @@
+# Ignore virtual environments for campusxappr and uno
+campusxappr/venv/
+uno/venv/
+
+# Standard Python .gitignore recommendations
+*.pyc
+__pycache__/
+.env
+.DS_Store
+.idea/
+.vscode/
