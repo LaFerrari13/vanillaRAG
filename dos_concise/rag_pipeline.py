@@ -1,14 +1,16 @@
 import os
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import AzureOpenAIEmbeddings
+from langchain_community.embeddings import AzureOpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.llms import AzureOpenAI
+# from langchain.llms import AzureOpenAI
+from langchain.chat_models import AzureChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+from langchain.prompts import ChatPromptTemplate
 
 class RAGPipeline:
-    def __init__(self, azure_endpoint, api_key, api_version="2023-12-01-preview"):
+    def __init__(self, azure_endpoint, api_key, api_version):
         """Initialize the RAG pipeline with Azure OpenAI credentials"""
         # Set up Azure OpenAI embeddings
         self.embeddings = AzureOpenAIEmbeddings(
@@ -19,11 +21,11 @@ class RAGPipeline:
         )
         
         # Set up Azure OpenAI LLM
-        self.llm = AzureOpenAI(
+        self.llm = AzureChatOpenAI(
             azure_endpoint=azure_endpoint,
             api_key=api_key,
             api_version=api_version,
-            deployment_name="gpt-35-turbo",  # Update with your deployment name
+            deployment_name="gpt-4o-mini",  # Update with your deployment name
             temperature=0.7
         )
         
@@ -55,7 +57,7 @@ class RAGPipeline:
         
         return len(chunks)
     
-    def _create_qa_chain(self):
+    def _create_qa_chain_completion(self):
         """Create the QA chain with custom prompt"""
         prompt_template = """Use the following pieces of context to answer the question at the end. 
         If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -70,6 +72,26 @@ class RAGPipeline:
             template=prompt_template,
             input_variables=["context", "question"]
         )
+        
+        self.qa_chain = RetrievalQA.from_chain_type(
+            llm=self.llm,
+            chain_type="stuff",
+            retriever=self.vectorstore.as_retriever(search_kwargs={"k": 3}),
+            chain_type_kwargs={"prompt": prompt},
+            return_source_documents=True
+        )
+
+    def _create_qa_chain(self):
+        """Create the QA chain with chat prompt template"""
+        # Create a chat prompt template
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are a helpful AI assistant. Use the following pieces of context to answer the user's question. 
+            If you don't know the answer based on the context, just say that you don't know, don't try to make up an answer.
+            
+            Context:
+            {context}"""),
+            ("human", "{question}")
+        ])
         
         self.qa_chain = RetrievalQA.from_chain_type(
             llm=self.llm,
@@ -100,31 +122,3 @@ class RAGPipeline:
         self.vectorstore = FAISS.load_local(path, self.embeddings)
         self._create_qa_chain()
 
-# Usage example
-if __name__ == "__main__":
-    # Initialize the pipeline
-    rag = RAGPipeline(
-        azure_endpoint="https://your-resource.openai.azure.com/",
-        api_key="your-api-key"
-    )
-    
-    # Load and process PDFs
-    pdf_files = ["cellstructure.pdf"]
-    num_chunks = rag.load_and_process_pdfs(pdf_files)
-    print(f"Processed {num_chunks} chunks")
-    
-    # Save vector store (optional)
-    rag.save_vectorstore("./vectorstore")
-    
-    # Query the system
-    while True:
-        question = input("\nEnter your question (or 'quit' to exit): ")
-        if question.lower() == 'quit':
-            break
-        
-        try:
-            result = rag.query(question)
-            print(f"\nAnswer: {result['answer']}")
-            print(f"\nSources: {len(result['source_documents'])} documents")
-        except Exception as e:
-            print(f"Error: {e}")

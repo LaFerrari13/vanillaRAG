@@ -1,6 +1,7 @@
 # Ignore virtual environments for campusxappr and uno
 campusxappr/venv/
 uno/venv/
+dos_concise/venv
 
 # Standard Python .gitignore recommendations
 *.pyc

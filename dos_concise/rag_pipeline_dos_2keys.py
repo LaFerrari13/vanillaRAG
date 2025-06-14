@@ -7,7 +7,7 @@ from langchain.llms import AzureOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
-class RAGPipeline:
+class RAGPipelinedos:
     def __init__(self, 
                  embeddings_endpoint, embeddings_api_key,
                  llm_endpoint, llm_api_key, 
@@ -106,7 +106,7 @@ class RAGPipeline:
 # Usage example
 if __name__ == "__main__":
     # Initialize the pipeline with separate endpoints
-    rag = RAGPipeline(
+    rag = RAGPipelinedos(
         embeddings_endpoint="https://your-original-openai-resource.openai.azure.com/",
         embeddings_api_key="your-original-api-key",
         llm_endpoint="https://your-ai-foundry-resource.openai.azure.com/",
